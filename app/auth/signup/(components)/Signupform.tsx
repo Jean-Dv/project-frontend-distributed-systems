@@ -4,9 +4,12 @@ import { useState } from "react";
 import InputField from "@/components/ui/InputField";
 import nextConfig from "@/next.config";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/Button";
 
 export default function SignupForm() {
     const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -15,6 +18,8 @@ export default function SignupForm() {
         const formData = new FormData(e.currentTarget);
         const username = formData.get("username") as string;
         const password = formData.get("password") as string;
+
+        setIsLoading(true);
         try {
             const response = await fetch(`${nextConfig.env!.API_BASE_URL}/ms-auth/auth/register`, {
                 method: "POST",
@@ -27,16 +32,18 @@ export default function SignupForm() {
                 }),
             });
             if (response.ok) {
+                toast.success("Registro completado con éxito. Por favor inicia sesión.");
                 router.push("/auth/login");
             }
             else {
                 throw new Error("Error al registrarse");
             }
         } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Error al registrarse");
             console.error(error);
+        } finally {
+            setIsLoading(false);
         }
-
-        console.log(username, password);
     }
 
     return (
@@ -64,15 +71,18 @@ export default function SignupForm() {
             />
 
             {/* Submit */}
-            <button
+            <Button
                 type="submit"
-                className="w-full bg-linear-to-r from-primary to-primary-dim text-on-primary font-semibold py-4 rounded-lg shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 group"
+                className="w-full mt-2"
+                isLoading={isLoading}
             >
-                <span>Registrarse</span>
-                <span className="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform">
-                    arrow_forward
+                <span className="flex items-center gap-2">
+                    Registrarse
+                    <span className="material-symbols-outlined text-xl transition-transform group-hover:translate-x-1">
+                        arrow_forward
+                    </span>
                 </span>
-            </button>
+            </Button>
         </form>
     );
 }
