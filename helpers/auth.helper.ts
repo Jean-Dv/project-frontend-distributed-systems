@@ -54,13 +54,17 @@ export function clearAuthSession() {
 
 export function setAuthSession({ token, scopes, role }: AuthSession) {
     sessionStorage.setItem(ACCESS_TOKEN_KEY, token);
-    if (scopes) {
+    if (scopes && scopes.length > 0) {
         sessionStorage.setItem(USER_SCOPES_KEY, JSON.stringify(scopes));
+    } else {
+        sessionStorage.removeItem(USER_SCOPES_KEY);
     }
 
     const inferredRole = inferRole({ role, scopes, token });
     if (inferredRole) {
         sessionStorage.setItem(USER_ROLE_KEY, inferredRole);
+    } else {
+        sessionStorage.removeItem(USER_ROLE_KEY);
     }
 }
 
@@ -93,7 +97,7 @@ function inferRole({ role, scopes, token }: { role?: string | null; scopes?: str
     const hasSuppliers = normalizedScopes.some((scope) => scope.includes("supplier"));
     const hasContracts = normalizedScopes.some((scope) => scope.includes("contract"));
 
-    if (hasAudit && (hasSuppliers || hasContracts)) return "ADMIN";
+    if (hasAudit && hasSuppliers) return "ADMIN";
     if (hasAudit) return "AUDITOR";
     if (hasSuppliers || hasContracts) return "FUNC";
 
