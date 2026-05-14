@@ -1,17 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import InputField from "@/components/ui/InputField";
 import { useRouter } from "next/navigation";
 import nextConfig from "@/next.config";
+import { getRole, popAuthMessage, roleToDashboardPath, setAuthSession } from "@/helpers/auth.helper";
 
 export default function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const router = useRouter();
+
+    useEffect(() => {
+        const message = popAuthMessage();
+        if (message) {
+            setErrorMessage(message);
+        }
+    }, []);
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
+        setErrorMessage(null);
         // TODO: implementar autenticación
         const formData = new FormData(e.currentTarget);
         const username = formData.get("username") as string;
@@ -30,15 +40,24 @@ export default function LoginForm() {
                 }),
             });
             if (response.ok) {
-                const { token } = await response.json();
-                sessionStorage.setItem("access_token", token);
-                router.push("/dashboard");
-            }
-            else {
-                throw new Error("Error al iniciar sesión");
+                const data = await response.json();
+                const token = data?.token as string;
+                if (!token) {
+                    setErrorMessage("No fue posible iniciar sesion. Intenta de nuevo.");
+                    return;
+                }
+                const scopes = Array.isArray(data?.scopes) ? data.scopes : undefined;
+                const role = typeof data?.role === "string" ? data.role : null;
+                setAuthSession({ token, scopes, role });
+                router.push(roleToDashboardPath(getRole()));
+            } else {
+                const errorBody = await response.json().catch(() => null);
+                const message = errorBody?.message || errorBody?.error || "Credenciales invalidas o usuario inactivo";
+                setErrorMessage(message);
             }
         } catch (error) {
             console.error(error);
+            setErrorMessage("No fue posible iniciar sesion. Intenta de nuevo.");
         }
 
         console.log(username, password, remember);
@@ -46,6 +65,11 @@ export default function LoginForm() {
 
     return (
         <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
+            {errorMessage ? (
+                <div className="rounded-lg border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
+                    {errorMessage}
+                </div>
+            ) : null}
             {/* Email */}
             <InputField
                 id="username"

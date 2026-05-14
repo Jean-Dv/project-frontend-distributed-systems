@@ -1,18 +1,26 @@
 "use client";
 
+import { clearAuthSession, getToken, setAuthMessage } from "@/helpers/auth.helper";
 
 export function useApi() {
-    const token = sessionStorage.getItem("access_token") || "";
-
-    const apiFetch = (url: string, options: any = {}) => {
-        return fetch(url, {
+    const apiFetch = async (url: string, options: any = {}) => {
+        const token = getToken();
+        const response = await fetch(url, {
             ...options,
             headers: {
                 ...options.headers,
-                Authorization: `Bearer ${token}`,
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
         });
-    }
 
-    return { apiFetch}
+        if (response.status === 401) {
+            clearAuthSession();
+            setAuthMessage("Tu sesion expiro. Inicia sesion nuevamente.");
+            window.location.assign("/auth/login");
+        }
+
+        return response;
+    };
+
+    return { apiFetch };
 }

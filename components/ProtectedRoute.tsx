@@ -3,20 +3,37 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Loader from "./layouts/Loader";
+import { getRole, getToken, roleToDashboardPath, UserRole } from "@/helpers/auth.helper";
 
-export function ProtectedRoute({ children }: { children: React.ReactNode }) {
+type ProtectedRouteProps = {
+    children: React.ReactNode;
+    allowedRoles?: UserRole[];
+};
+
+export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
     const [authorized, setAuthorized] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
-        const token = sessionStorage.getItem("access_token");
+        const token = getToken();
 
         if (!token) {
             router.replace("/auth/login");
-        } else {
+            return;
+        }
+
+        if (allowedRoles && allowedRoles.length > 0) {
+            const role = getRole();
+            if (!role || !allowedRoles.includes(role)) {
+                router.replace(roleToDashboardPath(role));
+                return;
+            }
+        }
+
+        if (!authorized) {
             setAuthorized(true);
         }
-    }, [router]);
+    }, [allowedRoles, authorized, router]);
 
     if (!authorized) return <Loader />;
 
