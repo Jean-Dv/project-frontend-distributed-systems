@@ -4,22 +4,19 @@ import { useState } from "react";
 import InputField from "@/components/ui/InputField";
 import nextConfig from "@/next.config";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/Button";
+import { getErrorMessage } from "@/helpers/use-api.helper";
 
 export default function SignupForm() {
     const [showPassword, setShowPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const router = useRouter();
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
-        // TODO: implementar autenticación
+        setErrorMessage(null);
         const formData = new FormData(e.currentTarget);
         const username = formData.get("username") as string;
         const password = formData.get("password") as string;
-
-        setIsLoading(true);
         try {
             const response = await fetch(`${nextConfig.env!.API_BASE_URL}/ms-auth/auth/register`, {
                 method: "POST",
@@ -32,22 +29,27 @@ export default function SignupForm() {
                 }),
             });
             if (response.ok) {
-                toast.success("Registro completado con éxito. Por favor inicia sesión.");
                 router.push("/auth/login");
-            }
-            else {
-                throw new Error("Error al registrarse");
+            } else {
+                const message = await getErrorMessage(response);
+                setErrorMessage(message || "No fue posible registrarse. Intenta de nuevo.");
             }
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Error al registrarse");
             console.error(error);
-        } finally {
-            setIsLoading(false);
+            setErrorMessage("No fue posible registrarse. Intenta de nuevo.");
         }
+
+        void username;
+        void password;
     }
 
     return (
         <form className="space-y-6" onSubmit={handleSubmit}>
+            {errorMessage ? (
+                <div className="rounded-lg border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
+                    {errorMessage}
+                </div>
+            ) : null}
             {/* Username */}
             <InputField
                 id="username"
@@ -64,25 +66,34 @@ export default function SignupForm() {
                 id="password"
                 label="Contraseña"
                 icon="lock"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="••••••••••••"
                 autoComplete="current-password"
                 required
+                rightElement={
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        className="text-outline hover:text-on-surface transition-colors"
+                        aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    >
+                        <span className="material-symbols-outlined text-lg">
+                            {showPassword ? "visibility_off" : "visibility"}
+                        </span>
+                    </button>
+                }
             />
 
             {/* Submit */}
-            <Button
+            <button
                 type="submit"
-                className="w-full mt-2"
-                isLoading={isLoading}
+                className="w-full bg-linear-to-r from-primary to-primary-dim text-on-primary font-semibold py-4 rounded-lg shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 group"
             >
-                <span className="flex items-center gap-2">
-                    Registrarse
-                    <span className="material-symbols-outlined text-xl transition-transform group-hover:translate-x-1">
-                        arrow_forward
-                    </span>
+                <span>Registrarse</span>
+                <span className="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform">
+                    arrow_forward
                 </span>
-            </Button>
+            </button>
         </form>
     );
 }
