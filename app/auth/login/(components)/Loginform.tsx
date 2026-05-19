@@ -8,17 +8,20 @@ import nextConfig from "@/next.config";
 import { getRole, popAuthMessage, roleToDashboardPath, setAuthSession } from "@/helpers/auth.helper";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
 
 export default function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    // DP-90: message set by the system when session expires or explicit logout.
+    const [authMessage, setAuthMessageState] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
         const message = popAuthMessage();
         if (message) {
-            setErrorMessage(message);
+            setAuthMessageState(message);
         }
     }, []);
 
@@ -58,20 +61,31 @@ export default function LoginForm() {
                 const errorBody = await response.json().catch(() => null);
                 const message = errorBody?.message || errorBody?.error || "Credenciales invalidas o usuario inactivo";
                 setErrorMessage(message);
+                setIsLoading(false);
             }
         } catch (error) {
             toast.error(error instanceof Error ? error.message : "Error al iniciar sesión");
             console.error(error);
             setErrorMessage("No fue posible iniciar sesion. Intenta de nuevo.");
+            setIsLoading(false);
         }
     }
 
     return (
         <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
+            {/* DP-90: System auth message (session expired / logout confirmation) */}
+            {authMessage ? (
+                <Alert
+                    variant={authMessage.toLowerCase().includes("correctamente") ? "success" : "info"}
+                >
+                    {authMessage}
+                </Alert>
+            ) : null}
+            {/* Login error message */}
             {errorMessage ? (
-                <div className="rounded-lg border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
+                <Alert variant="error">
                     {errorMessage}
-                </div>
+                </Alert>
             ) : null}
             {/* Email */}
             <InputField

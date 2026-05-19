@@ -52,6 +52,32 @@ export function clearAuthSession() {
     sessionStorage.removeItem(USER_SCOPES_KEY);
 }
 
+/**
+ * Returns true if the token is missing, malformed, or past its `exp` claim.
+ * A 30-second leeway is applied to account for clock skew.
+ */
+export function isTokenExpired(token?: string): boolean {
+    const t = token ?? getToken();
+    if (!t) return true;
+    const payload = decodeJwtPayload(t);
+    if (!payload || typeof payload.exp !== "number") return false; // no exp → treat as non-expiring
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    return payload.exp - nowSeconds < 30; // 30-second leeway
+}
+
+/**
+ * Returns the number of milliseconds until the token expires.
+ * Returns 0 if already expired or no token/exp claim found.
+ */
+export function msUntilTokenExpiry(token?: string): number {
+    const t = token ?? getToken();
+    if (!t) return 0;
+    const payload = decodeJwtPayload(t);
+    if (!payload || typeof payload.exp !== "number") return 0;
+    const remaining = payload.exp * 1000 - Date.now();
+    return Math.max(0, remaining);
+}
+
 export function setAuthSession({ token, scopes, role }: AuthSession) {
     sessionStorage.setItem(ACCESS_TOKEN_KEY, token);
     if (scopes && scopes.length > 0) {
@@ -93,9 +119,9 @@ function inferRole({ role, scopes, token }: { role?: string | null; scopes?: str
     }
 
     const normalizedScopes = (scopes || tokenPayload?.scopes || []).map((scope: string) => scope.toLowerCase());
-    const hasAudit = normalizedScopes.some((scope) => scope.includes("audit"));
-    const hasSuppliers = normalizedScopes.some((scope) => scope.includes("supplier"));
-    const hasContracts = normalizedScopes.some((scope) => scope.includes("contract"));
+    const hasAudit = normalizedScopes.some((scope: string) => scope.includes("audit"));
+    const hasSuppliers = normalizedScopes.some((scope: string) => scope.includes("supplier"));
+    const hasContracts = normalizedScopes.some((scope: string) => scope.includes("contract"));
 
     if (hasAudit && hasSuppliers) return "ADMIN";
     if (hasAudit) return "AUDITOR";
