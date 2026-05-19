@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Header from "@/components/layouts/Header";
 import Footer from "@/components/layouts/Footer";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Ledger - Distributed Systems",
@@ -23,10 +24,11 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="bg-surface text-on-surface min-h-screen flex flex-col">
+      <body className="bg-background text-on-background min-h-screen flex flex-col">
         <Header />
         {children}
         <Footer />
+        <Toaster richColors position="bottom-right" />
       </body>
     </html>
   );

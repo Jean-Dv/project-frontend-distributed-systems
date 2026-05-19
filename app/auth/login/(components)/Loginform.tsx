@@ -6,10 +6,13 @@ import InputField from "@/components/ui/InputField";
 import { useRouter } from "next/navigation";
 import nextConfig from "@/next.config";
 import { getRole, popAuthMessage, roleToDashboardPath, setAuthSession } from "@/helpers/auth.helper";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/Button";
 
 export default function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -28,6 +31,7 @@ export default function LoginForm() {
         const password = formData.get("password") as string;
         const remember = formData.get("remember") === "on";
 
+        setIsLoading(true);
         try {
             const response = await fetch(`${nextConfig.env!.API_BASE_URL}/ms-auth/auth/login`, {
                 method: "POST",
@@ -56,11 +60,10 @@ export default function LoginForm() {
                 setErrorMessage(message);
             }
         } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Error al iniciar sesión");
             console.error(error);
             setErrorMessage("No fue posible iniciar sesion. Intenta de nuevo.");
         }
-
-        console.log(username, password, remember);
     }
 
     return (
@@ -129,15 +132,18 @@ export default function LoginForm() {
             </div>
 
             {/* Submit */}
-            <button
+            <Button
                 type="submit"
-                className="w-full bg-linear-to-r from-primary to-primary-dim text-on-primary font-semibold py-4 rounded-lg shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 group"
+                className="w-full mt-2"
+                isLoading={isLoading}
             >
-                <span>Iniciar Sesión</span>
-                <span className="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform">
-                    arrow_forward
+                <span className="flex items-center gap-2">
+                    Iniciar Sesión
+                    <span className="material-symbols-outlined text-xl transition-transform group-hover:translate-x-1">
+                        arrow_forward
+                    </span>
                 </span>
-            </button>
+            </Button>
         </form>
     );
 }
