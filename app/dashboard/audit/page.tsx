@@ -1,3 +1,3 @@
 export default function ContractsPage() {
-    return <div>Contracts</div>;
+    return <div>Auditoria</div>;
 }
