@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useApi } from "@/helpers/use-api.helper";
+import { ApiError, useApi } from "@/helpers/use-api.helper";
 import { showToast } from "@/helpers/toast.helper";
 import InputField from "@/components/ui/InputField";
 import Button from "@/components/ui/Button";
@@ -31,8 +31,7 @@ export default function UserRegisterForm({ onSuccess }: UserRegisterFormProps) {
     setIsLoading(true);
 
     try {
-      // Register user
-      const registerRes = await apiFetch("http://localhost:8080/ms-auth/auth/register", {
+      const registerRes = await apiFetch("/ms-auth/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -42,29 +41,21 @@ export default function UserRegisterForm({ onSuccess }: UserRegisterFormProps) {
         }),
       });
 
-      if (!registerRes.ok) {
-        const errorData = await registerRes.json().catch(() => ({}));
-        showToast(errorData.message || "Error al registrar usuario", "error");
-        return;
-      }
-
       const userData = await registerRes.json();
 
-      // Assign role
       if (formData.role && formData.role !== "USER") {
-        const roleRes = await apiFetch(
-          `http://localhost:8080/ms-auth/auth/users/${userData.id}/roles`,
-          {
+        try {
+          await apiFetch(`/ms-auth/auth/users/${userData.id}/roles`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ add: [formData.role], remove: [] }),
-          }
-        );
-
-        if (!roleRes.ok) {
-          showToast("Usuario creado pero error al asignar rol", "error");
-        } else {
+          });
           showToast("Usuario registrado exitosamente", "success");
+        } catch (error) {
+          showToast(
+            resolveErrorMessage(error, "Usuario creado pero error al asignar rol"),
+            "error"
+          );
         }
       } else {
         showToast("Usuario registrado exitosamente", "success");
@@ -72,8 +63,8 @@ export default function UserRegisterForm({ onSuccess }: UserRegisterFormProps) {
 
       setFormData({ username: "", email: "", password: "", role: "OFFICER" });
       onSuccess();
-    } catch (err) {
-      showToast("Error de conexión con el servidor", "error");
+    } catch (error) {
+      showToast(resolveErrorMessage(error, "Error al registrar usuario"), "error");
     } finally {
       setIsLoading(false);
     }
@@ -137,4 +128,9 @@ export default function UserRegisterForm({ onSuccess }: UserRegisterFormProps) {
       </Button>
     </form>
   );
+}
+
+function resolveErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) return error.message;
+  return fallback;
 }

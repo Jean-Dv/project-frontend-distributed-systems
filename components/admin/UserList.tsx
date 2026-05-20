@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { useApi } from "@/helpers/use-api.helper";
+import { ApiError, useApi } from "@/helpers/use-api.helper";
 import { showToast } from "@/helpers/toast.helper";
 import Button from "@/components/ui/Button";
 
@@ -55,29 +55,20 @@ function RoleChangeModal({
     setIsLoading(true);
     try {
       const currentRoles = user.roles.map((r) => r.toUpperCase());
-      const res = await apiFetch(
-        `http://localhost:8080/ms-auth/auth/users/${user.id}/roles`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            add: [newRole],
-            remove: currentRoles.filter((r) => r !== newRole),
-          }),
-        }
-      );
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        showToast(errorData.message || "Error al cambiar rol", "error");
-        return;
-      }
+      await apiFetch(`/ms-auth/auth/users/${user.id}/roles`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          add: [newRole],
+          remove: currentRoles.filter((r) => r !== newRole),
+        }),
+      });
 
       showToast("Rol actualizado exitosamente", "success");
       onClose();
       onSuccess();
-    } catch {
-      showToast("Error de conexion con el servidor", "error");
+    } catch (error) {
+      showToast(resolveErrorMessage(error, "Error al cambiar rol"), "error");
     } finally {
       setIsLoading(false);
     }
@@ -248,28 +239,19 @@ export default function UserList({ users, onRefresh }: UserListProps) {
   const handleToggleStatus = async (user: User) => {
     setIsLoading(true);
     try {
-      const res = await apiFetch(
-        `http://localhost:8080/ms-auth/auth/users/${user.id}/status`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ active: !user.active }),
-        }
-      );
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        showToast(errorData.message || "Error al cambiar estado", "error");
-        return;
-      }
+      await apiFetch(`/ms-auth/auth/users/${user.id}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: !user.active }),
+      });
 
       showToast(
         `Usuario ${!user.active ? "habilitado" : "deshabilitado"} exitosamente`,
         "success"
       );
       onRefresh();
-    } catch {
-      showToast("Error de conexion con el servidor", "error");
+    } catch (error) {
+      showToast(resolveErrorMessage(error, "Error al cambiar estado"), "error");
     } finally {
       setIsLoading(false);
     }
@@ -426,4 +408,9 @@ export default function UserList({ users, onRefresh }: UserListProps) {
       />
     </div>
   );
+}
+
+function resolveErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) return error.message;
+  return fallback;
 }

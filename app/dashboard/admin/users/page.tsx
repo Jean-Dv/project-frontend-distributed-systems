@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useApi } from "@/helpers/use-api.helper";
+import { ApiError, useApi } from "@/helpers/use-api.helper";
 import { showToast } from "@/helpers/toast.helper";
 import UserRegisterForm from "@/components/admin/UserRegisterForm";
 import UserList from "@/components/admin/UserList";
@@ -24,16 +24,11 @@ export default function AdminUsersPage() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const res = await apiFetch("http://localhost:8080/ms-auth/auth/users");
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        showToast(errorData.message || "Error al cargar usuarios", "error");
-        return;
-      }
+      const res = await apiFetch("/ms-auth/auth/users");
       const data = await res.json();
       setUsers(data);
-    } catch {
-      showToast("Error de conexion con el servidor", "error");
+    } catch (error) {
+      showToast(resolveErrorMessage(error, "Error al cargar usuarios"), "error");
     } finally {
       setIsLoading(false);
     }
@@ -69,4 +64,9 @@ export default function AdminUsersPage() {
       </div>
     </ProtectedRoute>
   );
+}
+
+function resolveErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) return error.message;
+  return fallback;
 }
