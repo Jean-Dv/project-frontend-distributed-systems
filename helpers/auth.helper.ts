@@ -93,9 +93,10 @@ function inferRole({ role, scopes, token }: { role?: string | null; scopes?: str
     }
 
     const normalizedScopes = (scopes || tokenPayload?.scopes || []).map((scope: string) => scope.toLowerCase());
-    const hasAudit = normalizedScopes.some((scope) => scope.includes("audit"));
-    const hasSuppliers = normalizedScopes.some((scope) => scope.includes("supplier"));
-    const hasContracts = normalizedScopes.some((scope) => scope.includes("contract"));
+    const hasAudit = normalizedScopes.some((scope: string) => scope.includes("audit"));
+    const hasSuppliers = normalizedScopes.some((scope: string) => scope.includes("supplier"));
+    const hasContracts = normalizedScopes.some((scope: string) => scope.includes("contract"));
+
 
     if (hasAudit && hasSuppliers) return "ADMIN";
     if (hasAudit) return "AUDITOR";

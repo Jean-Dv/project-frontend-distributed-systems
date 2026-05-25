@@ -35,7 +35,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         onClick={onClose}
       />
       
-      <div className="relative z-10 w-full max-w-lg shadow-level-2 bg-surface-container-lowest rounded-lg flex flex-col max-h-[90vh]">
+      <div className="relative z-10 w-full shadow-level-2 bg-surface-container-lowest rounded-lg flex flex-col max-h-[90vh]">
         {title && (
           <div className="flex items-center justify-between p-lg border-b border-surface-variant">
             <h2 className="text-h3 text-on-surface">{title}</h2>
