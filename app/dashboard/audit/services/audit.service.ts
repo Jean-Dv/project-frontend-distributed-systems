@@ -1,6 +1,5 @@
 "use client";
 
-import { getApiBaseUrl } from "@/helpers/use-api.helper";
 import nextConfig from "@/next.config";
 
 export interface AuditEvent {
@@ -41,9 +40,6 @@ export async function fetchAuditEvents(
 
     const url = `${BASE_URL}/ms-audit/audit?${query.toString()}`;
 
-    // Note: we use raw fetch here, not apiFetch, because this service
-    // might be used outside React components. The caller should ensure
-    // the Authorization header is present if needed.
     const response = await fetch(url, {
         headers: {},
         credentials: "omit",
