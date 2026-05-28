@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useApi } from "@/helpers/use-api.helper";
 import { getRole, UserRole } from "@/helpers/auth.helper";
 import nextConfig from "@/next.config";
@@ -37,6 +37,7 @@ export default function AuditPage() {
     const [events, setEvents] = useState<BackendAuditEvent[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const initialFetchDone = useRef(false);
 
     const [filters, setFilters] = useState<AuditFilters>({
         contractId: "",
@@ -95,11 +96,12 @@ export default function AuditPage() {
         }
     }, [apiFetch, filters.contractId, filters.action, filters.serviceOrigin]);
 
+    // Auto-load once on page visit
     useEffect(() => {
-        const controller = new AbortController();
-        // defer via microtask to avoid synchronous setState inside the effect
-        void Promise.resolve().then(() => fetchAuditData());
-        return () => controller.abort();
+        if (!initialFetchDone.current) {
+            initialFetchDone.current = true;
+            fetchAuditData();
+        }
     }, [fetchAuditData]);
 
     const filteredEvents = events.filter((ev) => {
@@ -281,13 +283,28 @@ export default function AuditPage() {
                     )}
                 </div>
 
-                {role === "AUDITOR" && (
-                    <div className="mt-4 bg-secondary-container text-on-secondary-container p-3 rounded-md text-sm">
-                        Filtra por ID de contrato para ver eventos relacionados.
+                {role !== "AUDITOR" && role !== "ADMIN" && (
+                    <div className="mt-4 flex justify-end">
+                        <button
+                            onClick={fetchAuditData}
+                            className="bg-primary text-on-primary font-table-data text-table-data py-2 px-6 rounded-md hover:bg-primary-fixed-variant transition-colors flex items-center gap-2"
+                        >
+                            <span
+                                className="material-symbols-outlined text-sm"
+                                style={
+                                    {
+                                        fontVariationSettings: "'FILL' 0",
+                                    } as React.CSSProperties
+                                }
+                            >
+                                search
+                            </span>
+                            Aplicar Filtros
+                        </button>
                     </div>
                 )}
 
-                {role === "ADMIN" && (
+                {(role === "ADMIN" || role === "AUDITOR") && (
                     <div className="mt-4 flex justify-end">
                         <button
                             onClick={fetchAuditData}
