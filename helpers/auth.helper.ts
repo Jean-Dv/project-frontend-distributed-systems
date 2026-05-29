@@ -91,7 +91,7 @@ function inferRole({ role, scopes, token }: { role?: string | null; scopes?: str
         if (normalized.includes("AUDITOR")) return "AUDITOR";
     }
 
-    const normalizedScopes = (scopes || tokenPayload?.scopes || []).map((scope: string) => scope.toLowerCase());
+    const normalizedScopes = (scopes || (tokenPayload as { scopes?: string[] } | null)?.scopes || []).map((scope: string) => scope.toLowerCase());
     const hasAudit = normalizedScopes.some((scope: string) => scope.includes("audit"));
     const hasSuppliers = normalizedScopes.some((scope: string) => scope.includes("supplier"));
     const hasContracts = normalizedScopes.some((scope: string) => scope.includes("contract"));
@@ -103,6 +103,7 @@ function inferRole({ role, scopes, token }: { role?: string | null; scopes?: str
     return null;
 }
 
+
 function normalizeRole(role?: string | null): UserRole | null {
     if (!role) return null;
     if (role === "ADMIN" || role === "FUNC" || role === "AUDITOR") return role;
@@ -110,7 +111,7 @@ function normalizeRole(role?: string | null): UserRole | null {
     return null;
 }
 
-function decodeJwtPayload(token: string): any | null {
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
     const parts = token.split(".");
     if (parts.length < 2) return null;
     try {
