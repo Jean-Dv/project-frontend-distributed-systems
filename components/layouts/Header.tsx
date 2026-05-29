@@ -18,6 +18,14 @@ export default function Header() {
     const showLogout = isAuthenticated && !pathname.startsWith("/auth");
     const navigationItems = useMemo(() => getNavigationItems(role), [role]);
 
+    // DP-89: Explicit logout action — clears session, removes current URL from history
+    // via replace() so the back button cannot return to protected routes.
+    function handleLogout() {
+        clearAuthSession();
+        setAuthMessage("Has cerrado sesión correctamente.");
+        window.location.replace("/auth/login");
+    }
+
     return (
         <header className="w-full px-8 py-6 flex justify-between items-center">
             <div className="text-xl font-bold text-slate-900 tracking-tight">
@@ -42,14 +50,16 @@ export default function Header() {
                 </span>
                 {showLogout ? (
                     <button
+                        id="btn-logout"
                         type="button"
-                        onClick={() => {
-                            clearAuthSession();
-                            window.location.assign("/auth/login");
-                        }}
-                        className="text-sm font-semibold text-tertiary hover:text-tertiary-dim transition-colors"
+                        onClick={handleLogout}
+                        aria-label="Cerrar sesión"
+                        className="flex items-center gap-1.5 text-sm font-semibold text-tertiary hover:text-tertiary-dim transition-colors"
                     >
-                        Cerrar sesion
+                        <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+                            logout
+                        </span>
+                        Cerrar sesión
                     </button>
                 ) : null}
             </div>
