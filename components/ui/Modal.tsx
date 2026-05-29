@@ -53,7 +53,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         </div>
 
         {footer && (
-          <div className="p-lg border-t border-surface-variant flex justify-end gap-md">
+          <div className="p-lg border-t border-surface-variant flex justify-end gap-lg">
             {footer}
           </div>
         )}

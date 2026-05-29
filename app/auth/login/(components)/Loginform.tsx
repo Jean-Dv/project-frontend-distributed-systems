@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import InputField from "@/components/ui/InputField";
 import { useRouter } from "next/navigation";
-import nextConfig from "@/next.config";
 import { getRole, popAuthMessage, roleToDashboardPath, setAuthSession } from "@/helpers/auth.helper";
+import { getApiBaseUrl } from "@/helpers/use-api.helper";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 
@@ -33,7 +33,7 @@ export default function LoginForm() {
 
         setIsLoading(true);
         try {
-            const response = await fetch(`${nextConfig.env!.API_BASE_URL}/ms-auth/auth/login`, {
+            const response = await fetch(`${getApiBaseUrl()}/ms-auth/auth/login`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -56,12 +56,14 @@ export default function LoginForm() {
                 router.push(roleToDashboardPath(getRole()));
             } else {
                 const errorBody = await response.json().catch(() => null);
-                const message = errorBody?.message || errorBody?.error || "Credenciales invalidas o usuario inactivo";
+                const rawMessage = errorBody?.message || errorBody?.error;
+                const message = rawMessage === "Unauthorized"
+                    ? "Credenciales Invalidas"
+                    : rawMessage || "Credenciales invalidas o usuario inactivo";
                 setErrorMessage(message);
             }
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Error al iniciar sesión");
-            console.error(error);
+            toast.error("Error de conexion con el servidor.");
             setErrorMessage("No fue posible iniciar sesion. Intenta de nuevo.");
         }
     }
