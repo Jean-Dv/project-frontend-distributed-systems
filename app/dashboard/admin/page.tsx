@@ -10,7 +10,7 @@ export default function AdminDashboardPage() {
                 </p>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-3">
                 <Link
                     href="/dashboard/suppliers"
                     className="group rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-6 shadow-sm hover:shadow-md transition-shadow"
@@ -38,6 +38,21 @@ export default function AdminDashboardPage() {
                     </div>
                     <p className="mt-2 text-sm text-on-surface-variant">
                         Consulta eventos y trazabilidad del sistema.
+                    </p>
+                </Link>
+
+                <Link
+                    href="/dashboard/admin/users"
+                    className="group rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-6 shadow-sm hover:shadow-md transition-shadow"
+                >
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-lg font-semibold text-on-surface">Usuarios</h2>
+                        <span className="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">
+                            arrow_forward
+                        </span>
+                    </div>
+                    <p className="mt-2 text-sm text-on-surface-variant">
+                        Registra y gestiona los usuarios de la plataforma.
                     </p>
                 </Link>
             </div>

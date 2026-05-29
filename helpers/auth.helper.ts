@@ -17,9 +17,8 @@ export function getToken(): string {
 
 export function getRole(): UserRole | null {
     const role = sessionStorage.getItem(USER_ROLE_KEY);
-    if (role === "ADMIN" || role === "FUNC" || role === "AUDITOR") {
-        return role;
-    }
+    const normalized = normalizeRole(role);
+    if (normalized) return normalized;
     return null;
 }
 
@@ -76,19 +75,19 @@ export function roleToDashboardPath(role: UserRole | null): string {
 }
 
 function inferRole({ role, scopes, token }: { role?: string | null; scopes?: string[]; token?: string }) {
-    if (role === "ADMIN" || role === "FUNC" || role === "AUDITOR") {
-        return role;
-    }
+    const directRole = normalizeRole(role);
+    if (directRole) return directRole;
 
     const tokenPayload = token ? decodeJwtPayload(token) : null;
     const tokenRole = tokenPayload?.role || tokenPayload?.roles;
-    if (tokenRole === "ADMIN" || tokenRole === "FUNC" || tokenRole === "AUDITOR") {
-        return tokenRole;
+    if (typeof tokenRole === "string") {
+        const normalizedTokenRole = normalizeRole(tokenRole);
+        if (normalizedTokenRole) return normalizedTokenRole;
     }
     if (Array.isArray(tokenRole)) {
         const normalized = tokenRole.filter((value) => typeof value === "string");
         if (normalized.includes("ADMIN")) return "ADMIN";
-        if (normalized.includes("FUNC")) return "FUNC";
+        if (normalized.includes("OFFICER") || normalized.includes("FUNC")) return "FUNC";
         if (normalized.includes("AUDITOR")) return "AUDITOR";
     }
 
@@ -101,6 +100,14 @@ function inferRole({ role, scopes, token }: { role?: string | null; scopes?: str
     if (hasAudit) return "AUDITOR";
     if (hasSuppliers || hasContracts) return "FUNC";
 
+    return null;
+}
+
+
+function normalizeRole(role?: string | null): UserRole | null {
+    if (!role) return null;
+    if (role === "ADMIN" || role === "FUNC" || role === "AUDITOR") return role;
+    if (role === "OFFICER") return "FUNC";
     return null;
 }
 

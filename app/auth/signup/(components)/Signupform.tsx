@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import InputField from "@/components/ui/InputField";
-import nextConfig from "@/next.config";
+import { getApiBaseUrl } from "@/helpers/use-api.helper";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
@@ -21,7 +21,7 @@ export default function SignupForm() {
 
         setIsLoading(true);
         try {
-            const response = await fetch(`${nextConfig.env!.API_BASE_URL}/ms-auth/auth/register`, {
+            const response = await fetch(`${getApiBaseUrl()}/ms-auth/auth/register`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -36,11 +36,12 @@ export default function SignupForm() {
                 router.push("/auth/login");
             }
             else {
-                throw new Error("Error al registrarse");
+                const errorBody = await response.json().catch(() => null);
+                const message = errorBody?.message || "Error al registrarse";
+                toast.error(message);
             }
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Error al registrarse");
-            console.error(error);
+            toast.error("Error de conexion con el servidor.");
         } finally {
             setIsLoading(false);
         }
