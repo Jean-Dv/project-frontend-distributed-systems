@@ -4,7 +4,7 @@ import DashboardShell from "@/components/layouts/DashboardShell";
 export default function ContractsLayout({ children }: { children: React.ReactNode }) {
     return (
         <ProtectedRoute allowedRoles={["FUNC", "ADMIN"]}>
-            <DashboardShell>{children}</DashboardShell>
+            {children}
         </ProtectedRoute>
     );
 }
