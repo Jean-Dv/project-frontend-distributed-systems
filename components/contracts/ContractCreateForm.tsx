@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { resolveErrorMessage } from "@/helpers/use-api.helper";
 import {
     ContractCreatePayload,
     ContractFormErrors,
@@ -28,6 +30,7 @@ export function ContractCreateForm({
     const [endDate, setEndDate] = useState("");
     const [subject, setSubject] = useState("");
     const [errors, setErrors] = useState<ContractFormErrors>({});
+    const [formError, setFormError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const wordCount = countWords(subject);
@@ -56,6 +59,7 @@ export function ContractCreateForm({
 
         setIsSubmitting(true);
         setErrors({});
+        setFormError(null);
         try {
             await onSubmit(payload as ContractCreatePayload);
             // Reset on success
@@ -65,8 +69,7 @@ export function ContractCreateForm({
             setEndDate("");
             setSubject("");
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Error al crear el contrato.";
-            setErrors({ subject: msg });
+            setFormError(resolveErrorMessage(err, "No fue posible crear el contrato."));
         } finally {
             setIsSubmitting(false);
         }
@@ -108,6 +111,9 @@ export function ContractCreateForm({
 
             {/* ── Form ────────────────────────────────────────────────────── */}
             <form onSubmit={handleSubmit} noValidate className="p-6 space-y-6">
+                {formError && (
+                    <Alert variant="error">{formError}</Alert>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                     {/* Supplier select — full width */}

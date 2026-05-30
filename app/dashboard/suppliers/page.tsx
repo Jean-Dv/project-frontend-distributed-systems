@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useApi } from "@/helpers/use-api.helper";
+import { useApi, resolveErrorMessage } from "@/helpers/use-api.helper";
 import { Table } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
 import {
@@ -38,14 +38,10 @@ export default function SuppliersPage() {
         setIsLoading(true);
         try {
             const res = await apiFetch(SUPPLIERS_ENDPOINT);
-            if (res.ok) {
-                const data = await res.json();
-                setSuppliers(normalizeList<Supplier>(data));
-            } else {
-                toast.error("Error al cargar los proveedores.");
-            }
-        } catch {
-            toast.error("Error de conexión. Verifique que el servidor esté disponible.");
+            const data = await res.json();
+            setSuppliers(normalizeList<Supplier>(data));
+        } catch (err: unknown) {
+            toast.error(resolveErrorMessage(err, "No fue posible cargar los proveedores."));
         } finally {
             setIsLoading(false);
         }
@@ -57,32 +53,22 @@ export default function SuppliersPage() {
     }, []);
 
     const handleCreate = async (payload: SupplierCreatePayload) => {
-        const res = await apiFetch(SUPPLIERS_ENDPOINT, {
+        await apiFetch(SUPPLIERS_ENDPOINT, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
         });
-
-        if (!res.ok) {
-            const msg = await res.text().catch(() => "");
-            throw new Error(msg || `Error ${res.status} al registrar el proveedor.`);
-        }
 
         toast.success("Proveedor registrado correctamente.");
         await loadSuppliers();
     };
 
     const handleEdit = async (id: string, payload: SupplierEditPayload) => {
-        const res = await apiFetch(`${SUPPLIERS_ENDPOINT}/${id}`, {
+        await apiFetch(`${SUPPLIERS_ENDPOINT}/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
         });
-
-        if (!res.ok) {
-            const msg = await res.text().catch(() => "");
-            throw new Error(msg || `Error ${res.status} al actualizar el proveedor.`);
-        }
 
         setEditingSupplier(null);
         toast.success("Proveedor actualizado correctamente.");

@@ -57,17 +57,27 @@ export default function LoginForm() {
                 const role = typeof data?.role === "string" ? data.role : null;
                 setAuthSession({ token, scopes, role });
                 router.push(roleToDashboardPath(getRole()));
+            } else if (response.status >= 500) {
+                setErrorMessage(
+                    "El servicio no está disponible en este momento. Intenta nuevamente más tarde.",
+                );
+                setIsLoading(false);
             } else {
                 const errorBody = await response.json().catch(() => null);
-                const rawMessage = errorBody?.message || errorBody?.error;
-                const message = rawMessage === "Unauthorized"
-                    ? "Credenciales Invalidas"
-                    : rawMessage || "Credenciales invalidas o usuario inactivo";
+                const rawMessage =
+                    typeof errorBody?.message === "string" ? errorBody.message : undefined;
+                const altMessage =
+                    typeof errorBody?.error === "string" ? errorBody.error : undefined;
+                const candidate = rawMessage || altMessage;
+                const message =
+                    !candidate || candidate === "Unauthorized"
+                        ? "Credenciales inválidas o usuario inactivo."
+                        : candidate;
                 setErrorMessage(message);
                 setIsLoading(false);
             }
-        } catch (error) {
-            toast.error("Error de conexion con el servidor.");
+        } catch {
+            toast.error("No se pudo conectar con el servicio.");
             setErrorMessage("No fue posible iniciar sesion. Intenta de nuevo.");
             setIsLoading(false);
         }

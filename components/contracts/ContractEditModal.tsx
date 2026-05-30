@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Alert } from "@/components/ui/Alert";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { resolveErrorMessage } from "@/helpers/use-api.helper";
 import {
     Contract,
     ContractEditErrors,
@@ -22,6 +24,7 @@ export function ContractEditModal({ contract, onClose, onSave }: ContractEditMod
     const [status, setStatus] = useState<ContractStatus | "">("");
     const [budget, setBudget] = useState("");
     const [errors, setErrors] = useState<ContractEditErrors>({});
+    const [formError, setFormError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Sync form fields when the contract to edit changes
@@ -30,6 +33,7 @@ export function ContractEditModal({ contract, onClose, onSave }: ContractEditMod
             setStatus(contract.status);
             setBudget(String(contract.budget));
             setErrors({});
+            setFormError(null);
         }
     }, [contract]);
 
@@ -49,11 +53,11 @@ export function ContractEditModal({ contract, onClose, onSave }: ContractEditMod
         }
 
         setIsSubmitting(true);
+        setFormError(null);
         try {
             await onSave(contract!.id, payload as ContractEditPayload);
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Error al actualizar el contrato.";
-            setErrors({ budget: msg });
+            setFormError(resolveErrorMessage(err, "No fue posible actualizar el contrato."));
         } finally {
             setIsSubmitting(false);
         }
@@ -90,6 +94,9 @@ export function ContractEditModal({ contract, onClose, onSave }: ContractEditMod
             }
         >
             <div className="space-y-5">
+                {formError && (
+                    <Alert variant="error">{formError}</Alert>
+                )}
                 {/* Contract summary card */}
                 {contract && (
                     <div className="p-3 bg-surface-container-low rounded-lg border border-outline-variant/30">

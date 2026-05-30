@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ApiError, useApi } from "@/helpers/use-api.helper";
+import { useApi, resolveErrorMessage } from "@/helpers/use-api.helper";
 import { showToast } from "@/helpers/toast.helper";
 import InputField from "@/components/ui/InputField";
 import Button from "@/components/ui/Button";
@@ -130,7 +130,3 @@ export default function UserRegisterForm({ onSuccess }: UserRegisterFormProps) {
   );
 }
 
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) return error.message;
-  return fallback;
-}
