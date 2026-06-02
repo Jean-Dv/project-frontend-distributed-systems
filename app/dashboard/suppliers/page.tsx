@@ -68,7 +68,7 @@ export default function SuppliersPage() {
                 email: payload.email,
                 phone: payload.phone,
                 legalRepresentative: payload.legalRepresentative,
-                is_active: payload.is_active,
+                isActive: payload.isActive,
             }),
         });
         if (!res.ok) {
@@ -116,8 +116,8 @@ export default function SuppliersPage() {
         },
         {
             header: "Estado",
-            accessorKey: "is_active" as keyof Supplier,
-            cell: (row: Supplier) => <SupplierStatusChip isActive={row.is_active} />,
+            accessorKey: "isActive" as keyof Supplier,
+            cell: (row: Supplier) => <SupplierStatusChip isActive={row.isActive} />,
         },
         {
             header: "",

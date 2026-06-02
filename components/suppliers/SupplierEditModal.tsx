@@ -40,11 +40,11 @@ export function SupplierEditModal({ supplier, onClose, onSave }: SupplierEditMod
 
     useEffect(() => {
         if (supplier) {
-            setName(supplier.name);
-            setEmail(supplier.email);
-            setPhone(supplier.phone);
-            setLegalRepresentative(supplier.legalRepresentative);
-            setIsActive(supplier.is_active);
+            setName(supplier.name ?? "");
+            setEmail(supplier.email ?? "");
+            setPhone(supplier.phone ?? "");
+            setLegalRepresentative(supplier.legalRepresentative ?? "");
+            setIsActive(supplier.isActive ?? true);
             setErrors({});
         }
     }, [supplier]);
@@ -54,11 +54,11 @@ export function SupplierEditModal({ supplier, onClose, onSave }: SupplierEditMod
 
     const handleSave = async () => {
         const payload: SupplierEditPayload = {};
-        if (name.trim()) payload.name = name.trim();
-        if (email.trim()) payload.email = email.trim();
-        if (phone.trim()) payload.phone = phone.trim();
-        if (legalRepresentative.trim()) payload.legalRepresentative = legalRepresentative.trim();
-        payload.is_active = isActive;
+        if (name?.trim()) payload.name = name.trim();
+        if (email?.trim()) payload.email = email.trim();
+        if (phone?.trim()) payload.phone = phone.trim();
+        if (legalRepresentative?.trim()) payload.legalRepresentative = legalRepresentative.trim();
+        payload.isActive = isActive;
 
         const validationErrors = validate(payload);
         if (Object.keys(validationErrors).length > 0) {

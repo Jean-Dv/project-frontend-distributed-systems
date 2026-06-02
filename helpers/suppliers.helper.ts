@@ -5,7 +5,7 @@ export interface Supplier {
     email: string;
     phone: string;
     legalRepresentative: string;
-    is_active: boolean;
+    isActive: boolean;
 }
 
 export interface SupplierCreatePayload {
@@ -21,7 +21,7 @@ export interface SupplierEditPayload {
     email?: string;
     phone?: string;
     legalRepresentative?: string;
-    is_active?: boolean;
+    isActive?: boolean;
 }
 
 export interface SupplierFormErrors {

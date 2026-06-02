@@ -137,6 +137,55 @@ export default function AuditPage() {
         return typeof val === "string" ? val : "N/A";
     };
 
+    const MAX_DESC_LENGTH = 100;
+
+    const truncate = (text: string, max: number): string =>
+        text.length > max ? text.slice(0, max) + "…" : text;
+
+    const buildFullDescription = (
+        data: Record<string, unknown> | undefined,
+        serviceOrigin: string
+    ): string => {
+        if (!data) return "N/A";
+        if (serviceOrigin === "ms-suppliers") {
+            const name = data.name as string;
+            const nit = data.nit as string;
+            const status = data.isActive ? "Activo" : "Inactivo";
+            if (name) return `${name} (NIT: ${nit || "—"}) — ${status}`;
+        }
+        if (serviceOrigin === "ms-contracts") {
+            const subject = data.subject as string;
+            const number = data.contractNumber as string;
+            if (subject) return `${subject} (#${number || "—"})`;
+        }
+        return getDataValue(data, "description") || getDataValue(data, "reason") || "N/A";
+    };
+
+    const formatDescription = (
+        data: Record<string, unknown> | undefined,
+        serviceOrigin: string
+    ): string => {
+        if (!data) return "N/A";
+
+        if (serviceOrigin === "ms-suppliers") {
+            const name = data.name as string;
+            const nit = data.nit as string;
+            const status = data.isActive ? "Activo" : "Inactivo";
+            if (name) return `${name} (NIT: ${nit || "—"}) — ${status}`;
+        }
+
+        if (serviceOrigin === "ms-contracts") {
+            const subject = data.subject as string;
+            const number = data.contractNumber as string;
+            if (subject) return truncate(subject, MAX_DESC_LENGTH) + (number ? ` (#${number})` : "");
+        }
+
+        return truncate(
+            getDataValue(data, "description") || getDataValue(data, "reason") || "N/A",
+            MAX_DESC_LENGTH
+        );
+    };
+
     return (
         <main className="px-8 py-10 max-w-7xl mx-auto">
             {/* Page Header */}
@@ -394,16 +443,23 @@ export default function AuditPage() {
                             {
                                 header: "DESCRIPCIÓN",
                                 accessorKey: "timestamp" as keyof BackendAuditEvent,
-                                cell: (item: BackendAuditEvent) => (
-                                    <span className="font-body-sm text-body-sm text-on-surface">
-                                        {getDataValue(
-                                            item.data,
-                                            "description"
-                                        ) ||
-                                            getDataValue(item.data, "reason") ||
-                                            "N/A"}
-                                    </span>
-                                ),
+                                cell: (item: BackendAuditEvent) => {
+                                    const fullDesc = buildFullDescription(
+                                        item.data,
+                                        item.serviceOrigin
+                                    );
+                                    return (
+                                        <span
+                                            className="font-body-sm text-body-sm text-on-surface"
+                                            title={fullDesc}
+                                        >
+                                            {formatDescription(
+                                                item.data,
+                                                item.serviceOrigin
+                                            )}
+                                        </span>
+                                    );
+                                },
                             },
                             {
                                 header: "USUARIO",
