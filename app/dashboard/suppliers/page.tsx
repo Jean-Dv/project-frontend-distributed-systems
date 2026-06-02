@@ -13,6 +13,7 @@ import {
 import { SupplierStatusChip } from "@/components/suppliers/SupplierStatusChip";
 import { SupplierCreateForm } from "@/components/suppliers/SupplierCreateForm";
 import { SupplierEditModal } from "@/components/suppliers/SupplierEditModal";
+import { getRole } from "@/helpers/auth.helper";
 
 const API_BASE = process.env.API_BASE_URL ?? "http://localhost:8080";
 const SUPPLIERS_ENDPOINT = `${API_BASE}/ms-suppliers/suppliers`;
@@ -30,9 +31,12 @@ export default function SuppliersPage() {
 
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [role, setRole] = useState<string | null>(null);
     const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
 
     const createFormRef = useRef<HTMLDivElement>(null);
+
+    const isAdmin = role === "ADMIN";
 
     const loadSuppliers = async () => {
         setIsLoading(true);
@@ -52,6 +56,7 @@ export default function SuppliersPage() {
     };
 
     useEffect(() => {
+        setRole(getRole());
         void loadSuppliers();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -145,7 +150,11 @@ export default function SuppliersPage() {
             accessorKey: "isActive",
             cell: (row) => <SupplierStatusChip isActive={row.isActive} />,
         },
-        {
+    ];
+
+    if (isAdmin) {
+        // Add the button edit to the end of the columns if the user is an admin
+        columns.push({
             header: "",
             accessorKey: "id",
             cell: (row) => (
@@ -159,8 +168,8 @@ export default function SuppliersPage() {
                     <span className="material-symbols-outlined text-[18px]">edit</span>
                 </button>
             ),
-        },
-    ];
+        });
+    }
 
     const enabledCount = suppliers.filter((s) => s.isActive).length;
 
