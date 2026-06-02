@@ -42,9 +42,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                         <span className="material-symbols-outlined text-on-primary text-[20px]">gavel</span>
                     </div>
                     <div className="min-w-0">
-                        <p className="text-h3 font-bold text-primary leading-tight truncate">LegalTrack</p>
                         {roleLabel && (
-                            <p className="text-label-caps text-on-surface-variant mt-0.5">Rol: {roleLabel}</p>
+                            <p className="text-label-caps text-on-surface-variant">Rol: {roleLabel}</p>
                         )}
                     </div>
                 </div>

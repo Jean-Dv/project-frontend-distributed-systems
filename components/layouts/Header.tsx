@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { clearAuthSession, getRole, getToken, UserRole } from "@/helpers/auth.helper";
+import { clearAuthSession, getRole, getToken, setAuthMessage, UserRole } from "@/helpers/auth.helper";
 
 export default function Header() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);

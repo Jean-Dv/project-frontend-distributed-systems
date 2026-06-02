@@ -12,7 +12,7 @@ export class ApiError extends Error {
 }
 
 export function useApi() {
-    const apiFetch = async (url: string, options: any = {}) => {
+    const apiFetch = async (url: string, options: RequestInit = {}) => {
         const token = getToken();
         const targetUrl = buildApiUrl(url);
 

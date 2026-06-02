@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ApiError, useApi } from "@/helpers/use-api.helper";
 import { showToast } from "@/helpers/toast.helper";
@@ -41,13 +41,18 @@ function RoleChangeModal({
   const [isLoading, setIsLoading] = useState(false);
 
   // Prevent body scroll when open
-  if (typeof window !== "undefined") {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (isOpen) {
+        document.body.style.overflow = "hidden";
+      } else {
+        document.body.style.overflow = "";
+      }
+      return () => {
+        document.body.style.overflow = "";
+      };
     }
-  }
+  }, [isOpen]);
 
   const handleChangeRole = async () => {
     if (!user || !newRole) return;
