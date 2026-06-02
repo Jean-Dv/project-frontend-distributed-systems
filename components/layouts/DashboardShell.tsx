@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getRole } from "@/helpers/auth.helper";
+import { getRole, UserRole } from "@/helpers/auth.helper";
 
 interface NavItem {
     href: string;
@@ -11,26 +11,50 @@ interface NavItem {
     label: string;
 }
 
-const NAV_ITEMS: NavItem[] = [
-    { href: "/dashboard/contracts", icon: "description", label: "Contratos" },
-    { href: "/dashboard/suppliers", icon: "business_center", label: "Proveedores" },
-    { href: "/dashboard/audit", icon: "analytics", label: "Auditoría" },
-];
-
 const ROLE_LABELS: Record<string, string> = {
     FUNC: "FUNCIONARIO",
     ADMIN: "ADMINISTRADOR",
     AUDITOR: "AUDITOR",
 };
 
+function getNavItems(role: UserRole | null): NavItem[] {
+    if (role === "ADMIN") {
+        return [
+            { href: "/dashboard/admin/users", icon: "manage_accounts", label: "Gestión de Usuarios" },
+            { href: "/dashboard/contracts", icon: "description", label: "Contratos" },
+            { href: "/dashboard/suppliers", icon: "business_center", label: "Proveedores" },
+            { href: "/dashboard/audit", icon: "analytics", label: "Auditoría" },
+        ];
+    }
+
+    if (role === "FUNC") {
+        return [
+            { href: "/dashboard/contracts", icon: "description", label: "Contratos" },
+            { href: "/dashboard/suppliers", icon: "business_center", label: "Proveedores" },
+        ];
+    }
+
+    if (role === "AUDITOR") {
+        return [
+            { href: "/dashboard/audit", icon: "analytics", label: "Auditoría" },
+        ];
+    }
+
+    return [];
+}
+
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const [role, setRole] = useState<UserRole | null>(null);
     const [roleLabel, setRoleLabel] = useState<string>("");
 
     useEffect(() => {
-        const role = getRole();
-        setRoleLabel(role ? (ROLE_LABELS[role] ?? role) : "");
+        const r = getRole();
+        setRole(r);
+        setRoleLabel(r ? (ROLE_LABELS[r] ?? r) : "");
     }, []);
+
+    const navItems = getNavItems(role);
 
     return (
         <div className="flex flex-1">
@@ -50,7 +74,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
                 {/* Navigation */}
                 <nav className="flex-1 flex flex-col gap-1 p-3 mt-2">
-                    {NAV_ITEMS.map((item) => {
+                    {navItems.map((item) => {
                         const isActive = pathname.startsWith(item.href);
                         return (
                             <Link
