@@ -52,7 +52,7 @@ export function SupplierCreateForm({ onSubmit }: SupplierCreateFormProps) {
             setPhone("");
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "Error al registrar el proveedor.";
-            setErrors({ name: msg });
+            setErrors({ nit: msg });
         } finally {
             setIsSubmitting(false);
         }
