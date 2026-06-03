@@ -8,16 +8,35 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 
 export default function SignupForm() {
-    const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
+    function isValidEmail(email: string): boolean {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
-        // TODO: implementar autenticación
         const formData = new FormData(e.currentTarget);
         const username = formData.get("username") as string;
+        const email = formData.get("email") as string;
         const password = formData.get("password") as string;
+        const confirmPassword = formData.get("confirmPassword") as string;
+
+        if (!email || !isValidEmail(email)) {
+            toast.error("Ingrese un correo electrónico válido.");
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            toast.error("Las contraseñas no coinciden.");
+            return;
+        }
+
+        if (!password || password.length < 6) {
+            toast.error("La contraseña debe tener al menos 6 caracteres.");
+            return;
+        }
 
         setIsLoading(true);
         try {
@@ -26,22 +45,18 @@ export default function SignupForm() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    username,
-                    password
-                }),
+                body: JSON.stringify({ username, email, password }),
             });
             if (response.ok) {
                 toast.success("Registro completado con éxito. Por favor inicia sesión.");
                 router.push("/auth/login");
-            }
-            else {
+            } else {
                 const errorBody = await response.json().catch(() => null);
                 const message = errorBody?.message || "Error al registrarse";
                 toast.error(message);
             }
-        } catch (error) {
-            toast.error("Error de conexion con el servidor.");
+        } catch {
+            toast.error("Error de conexión con el servidor.");
         } finally {
             setIsLoading(false);
         }
@@ -60,6 +75,17 @@ export default function SignupForm() {
                 required
             />
 
+            {/* Email */}
+            <InputField
+                id="email"
+                label="Correo electrónico"
+                icon="mail"
+                type="email"
+                placeholder="correo@ejemplo.com"
+                autoComplete="email"
+                required
+            />
+
             {/* Password */}
             <InputField
                 id="password"
@@ -67,7 +93,18 @@ export default function SignupForm() {
                 icon="lock"
                 type="password"
                 placeholder="••••••••••••"
-                autoComplete="current-password"
+                autoComplete="new-password"
+                required
+            />
+
+            {/* Confirm password */}
+            <InputField
+                id="confirmPassword"
+                label="Confirmar contraseña"
+                icon="lock"
+                type="password"
+                placeholder="••••••••••••"
+                autoComplete="new-password"
                 required
             />
 
