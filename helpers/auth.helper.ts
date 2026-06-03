@@ -94,7 +94,7 @@ export function setAuthSession({ token, scopes, role }: AuthSession) {
 }
 
 export function roleToDashboardPath(role: UserRole | null): string {
-    if (role === "ADMIN") return "/dashboard/admin";
+    if (role === "ADMIN") return "/dashboard/suppliers";
     if (role === "FUNC") return "/dashboard/contracts";
     if (role === "AUDITOR") return "/dashboard/audit";
     return "/dashboard";
