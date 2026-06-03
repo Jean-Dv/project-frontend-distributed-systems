@@ -78,11 +78,15 @@ function getNavigationItems(role: UserRole | null): NavigationItem[] {
             { label: "Usuarios", href: "/dashboard/admin/users" },
             { label: "Proveedores", href: "/dashboard/suppliers" },
             { label: "Auditoria", href: "/dashboard/audit" },
+            { label: "Contratos", href: "/dashboard/contracts" },
         ];
     }
 
     if (role === "FUNC") {
-        return [{ label: "Contratos", href: "/dashboard/contracts" }];
+        return [
+            { label: "Contratos", href: "/dashboard/contracts" },
+            { label: "Proveedores", href: "/dashboard/suppliers" },
+        ];
     }
 
     if (role === "AUDITOR") {
