@@ -97,11 +97,9 @@ export function ContractEditModal({ contract, onClose, onSave }: ContractEditMod
                         <p className="text-body-sm text-on-surface font-semibold">
                             {contract.contractNumber ?? contract.id}
                         </p>
-                        {contract.supplierName && (
-                            <p className="text-body-sm text-on-surface-variant mt-0.5">
-                                {contract.supplierName}
-                            </p>
-                        )}
+                        <p className="text-body-sm text-on-surface-variant mt-0.5">
+                            ID Proveedor: {contract.supplierId}
+                        </p>
                     </div>
                 )}
 
