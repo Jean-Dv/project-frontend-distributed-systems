@@ -50,13 +50,20 @@ export default function SignupForm() {
             if (response.ok) {
                 toast.success("Registro completado con éxito. Por favor inicia sesión.");
                 router.push("/auth/login");
+            } else if (response.status >= 500) {
+                toast.error(
+                    "El servicio no está disponible en este momento. Intenta nuevamente más tarde.",
+                );
             } else {
                 const errorBody = await response.json().catch(() => null);
-                const message = errorBody?.message || "Error al registrarse";
-                toast.error(message);
+                const candidate =
+                    (typeof errorBody?.message === "string" && errorBody.message) ||
+                    (typeof errorBody?.error === "string" && errorBody.error) ||
+                    null;
+                toast.error(candidate || "No fue posible completar el registro.");
             }
         } catch {
-            toast.error("Error de conexión con el servidor.");
+            toast.error("No se pudo conectar con el servicio.");
         } finally {
             setIsLoading(false);
         }

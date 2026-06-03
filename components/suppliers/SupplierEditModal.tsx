@@ -1,9 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Alert } from "@/components/ui/Alert";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
-import { Supplier, SupplierEditPayload, SupplierFormErrors } from "@/helpers/suppliers.helper";
+import { resolveErrorMessage } from "@/helpers/use-api.helper";
+import {
+    Supplier,
+    SupplierEditErrors,
+    SupplierEditPayload,
+    validateSupplierEdit,
+} from "@/helpers/suppliers.helper";
 
 interface SupplierEditModalProps {
     supplier: Supplier | null;
@@ -11,72 +18,60 @@ interface SupplierEditModalProps {
     onSave: (id: string, payload: SupplierEditPayload) => Promise<void>;
 }
 
-const inputCls = (hasError: boolean) =>
-    `w-full pl-12 pr-4 py-3.5 bg-surface-container-low rounded text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 text-sm transition-all ${
-        hasError
-            ? "outline outline-1 outline-error focus:ring-error"
-            : "outline outline-1 outline-outline-variant/50 focus:ring-primary"
-    }`;
-
-const labelCls = (hasError: boolean) =>
-    `text-label-caps ${hasError ? "text-error" : "text-on-surface-variant"}`;
-
-function validate(payload: Partial<SupplierEditPayload>): SupplierFormErrors {
-    const errors: SupplierFormErrors = {};
-    if (payload.email !== undefined && payload.email.trim() !== "" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
-        errors.email = "Correo electrónico inválido.";
-    }
-    return errors;
-}
-
 export function SupplierEditModal({ supplier, onClose, onSave }: SupplierEditModalProps) {
     const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
-    const [legalRepresentative, setLegalRepresentative] = useState("");
     const [isActive, setIsActive] = useState(true);
-    const [errors, setErrors] = useState<SupplierFormErrors>({});
+    const [errors, setErrors] = useState<SupplierEditErrors>({});
+    const [formError, setFormError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (supplier) {
-            setName(supplier.name ?? "");
-            setEmail(supplier.email ?? "");
-            setPhone(supplier.phone ?? "");
-            setLegalRepresentative(supplier.legalRepresentative ?? "");
-            setIsActive(supplier.isActive ?? true);
+            setName(supplier.name);
+            setPhone(supplier.phone);
+            setIsActive(supplier.isActive);
             setErrors({});
+            setFormError(null);
         }
     }, [supplier]);
 
-    const clearFieldError = (field: keyof SupplierFormErrors) =>
+    const clearFieldError = (field: keyof SupplierEditErrors) =>
         setErrors((prev) => ({ ...prev, [field]: undefined }));
 
     const handleSave = async () => {
-        const payload: SupplierEditPayload = {};
-        if (name?.trim()) payload.name = name.trim();
-        if (email?.trim()) payload.email = email.trim();
-        if (phone?.trim()) payload.phone = phone.trim();
-        if (legalRepresentative?.trim()) payload.legalRepresentative = legalRepresentative.trim();
-        payload.isActive = isActive;
+        const payload: Partial<SupplierEditPayload> = {
+            name: name.trim(),
+            phone: phone.trim(),
+            isActive,
+        };
 
-        const validationErrors = validate(payload);
+        const validationErrors = validateSupplierEdit(payload);
         if (Object.keys(validationErrors).length > 0) {
             setErrors(validationErrors);
             return;
         }
 
         setIsSubmitting(true);
+        setFormError(null);
         try {
-            await onSave(supplier!.id, payload);
-            onClose();
+            await onSave(supplier!.id, payload as SupplierEditPayload);
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Error al actualizar el proveedor.";
-            setErrors({ name: msg });
+            setFormError(resolveErrorMessage(err, "No fue posible actualizar el proveedor."));
         } finally {
             setIsSubmitting(false);
         }
     };
+
+    const fieldCls = (hasError: boolean) =>
+        `w-full pl-12 pr-4 py-3.5 bg-surface-container-low rounded text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 text-sm transition-all ${
+            hasError
+                ? "outline outline-1 outline-error focus:ring-error"
+                : "outline outline-1 outline-outline-variant/50 focus:ring-primary"
+        }`;
+
+    const readonlyCls =
+        "w-full pl-12 pr-4 py-3.5 bg-surface-container-high rounded text-on-surface-variant text-sm outline outline-1 outline-outline-variant/30 cursor-not-allowed";
 
     return (
         <Modal
@@ -101,37 +96,44 @@ export function SupplierEditModal({ supplier, onClose, onSave }: SupplierEditMod
             }
         >
             <div className="space-y-5">
-                {/* Supplier summary */}
+                {formError && (
+                    <Alert variant="error">{formError}</Alert>
+                )}
                 {supplier && (
-                    <div className="p-3 bg-surface-container-low rounded-lg border border-outline-variant/30">
-                        <p className="text-label-caps text-on-surface-variant mb-1">Proveedor</p>
-                        <p className="text-body-sm text-on-surface font-semibold">{supplier.name}</p>
-                        <p className="text-body-sm text-on-surface-variant mt-0.5">NIT: {supplier.nit}</p>
+                    <div className="p-3 bg-surface-container-low rounded-lg border border-outline-variant/30 space-y-1">
+                        <p className="text-label-caps text-on-surface-variant">Proveedor</p>
+                        <p className="text-body-sm text-on-surface font-semibold">
+                            NIT: {supplier.nit}
+                        </p>
+                        <p className="text-body-sm text-on-surface-variant">
+                            Representante legal: {supplier.legalRepresentative}
+                        </p>
                     </div>
                 )}
 
-                {/* Name */}
+                {/* Read-only NIT */}
                 <div className="flex flex-col gap-2">
-                    <label className={labelCls(!!errors.name)}>
-                        Razón Social
+                    <label className="text-label-caps text-on-surface-variant">
+                        NIT (no editable)
                     </label>
                     <div className="relative">
                         <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-lg text-outline pointer-events-none">
-                            business
+                            badge
                         </span>
                         <input
                             type="text"
-                            value={name}
-                            onChange={(e) => { setName(e.target.value); clearFieldError("name"); }}
-                            className={inputCls(!!errors.name)}
+                            value={supplier?.nit ?? ""}
+                            readOnly
+                            disabled
+                            className={readonlyCls}
                         />
                     </div>
                 </div>
 
-                {/* Email */}
+                {/* Read-only email */}
                 <div className="flex flex-col gap-2">
-                    <label className={labelCls(!!errors.email)}>
-                        Correo Electrónico
+                    <label className="text-label-caps text-on-surface-variant">
+                        Correo electrónico (no editable)
                     </label>
                     <div className="relative">
                         <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-lg text-outline pointer-events-none">
@@ -139,36 +141,18 @@ export function SupplierEditModal({ supplier, onClose, onSave }: SupplierEditMod
                         </span>
                         <input
                             type="email"
-                            value={email}
-                            onChange={(e) => { setEmail(e.target.value); clearFieldError("email"); }}
-                            className={inputCls(!!errors.email)}
-                        />
-                    </div>
-                    {errors.email && <span className="text-body-sm text-error ml-1">{errors.email}</span>}
-                </div>
-
-                {/* Phone */}
-                <div className="flex flex-col gap-2">
-                    <label className={labelCls(!!errors.phone)}>
-                        Teléfono
-                    </label>
-                    <div className="relative">
-                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-lg text-outline pointer-events-none">
-                            call
-                        </span>
-                        <input
-                            type="text"
-                            value={phone}
-                            onChange={(e) => { setPhone(e.target.value); clearFieldError("phone"); }}
-                            className={inputCls(!!errors.phone)}
+                            value={supplier?.email ?? ""}
+                            readOnly
+                            disabled
+                            className={readonlyCls}
                         />
                     </div>
                 </div>
 
-                {/* Legal Representative */}
+                {/* Read-only legal representative */}
                 <div className="flex flex-col gap-2">
-                    <label className={labelCls(!!errors.legalRepresentative)}>
-                        Representante Legal
+                    <label className="text-label-caps text-on-surface-variant">
+                        Representante legal (no editable)
                     </label>
                     <div className="relative">
                         <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-lg text-outline pointer-events-none">
@@ -176,27 +160,104 @@ export function SupplierEditModal({ supplier, onClose, onSave }: SupplierEditMod
                         </span>
                         <input
                             type="text"
-                            value={legalRepresentative}
-                            onChange={(e) => { setLegalRepresentative(e.target.value); clearFieldError("legalRepresentative"); }}
-                            className={inputCls(!!errors.legalRepresentative)}
+                            value={supplier?.legalRepresentative ?? ""}
+                            readOnly
+                            disabled
+                            className={readonlyCls}
                         />
                     </div>
                 </div>
 
-                {/* Active toggle */}
-                <div className="flex items-center gap-3 pt-2">
-                    <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={isActive}
-                            onChange={(e) => setIsActive(e.target.checked)}
-                            className="sr-only peer"
-                        />
-                        <div className="w-10 h-6 bg-surface-variant rounded-full peer peer-checked:bg-secondary peer-focus:ring-2 peer-focus:ring-primary transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-4" />
+                {/* Editable: name */}
+                <div className="flex flex-col gap-2">
+                    <label
+                        htmlFor="supplier-edit-name"
+                        className={`text-label-caps ${
+                            errors.name ? "text-error" : "text-on-surface-variant"
+                        }`}
+                    >
+                        Nombre o razón social <span className="text-error">*</span>
                     </label>
-                    <span className="text-table-data text-on-surface">
-                        {isActive ? "Habilitado" : "Inhabilitado"}
-                    </span>
+                    <div className="relative">
+                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-lg text-outline pointer-events-none">
+                            business
+                        </span>
+                        <input
+                            id="supplier-edit-name"
+                            type="text"
+                            value={name}
+                            onChange={(e) => {
+                                setName(e.target.value);
+                                clearFieldError("name");
+                            }}
+                            className={fieldCls(!!errors.name)}
+                        />
+                    </div>
+                    {errors.name && (
+                        <span className="text-body-sm text-error ml-1">{errors.name}</span>
+                    )}
+                </div>
+
+                {/* Editable: phone */}
+                <div className="flex flex-col gap-2">
+                    <label
+                        htmlFor="supplier-edit-phone"
+                        className={`text-label-caps ${
+                            errors.phone ? "text-error" : "text-on-surface-variant"
+                        }`}
+                    >
+                        Teléfono <span className="text-error">*</span>
+                    </label>
+                    <div className="relative">
+                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-lg text-outline pointer-events-none">
+                            call
+                        </span>
+                        <input
+                            id="supplier-edit-phone"
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => {
+                                setPhone(e.target.value);
+                                clearFieldError("phone");
+                            }}
+                            className={fieldCls(!!errors.phone)}
+                        />
+                    </div>
+                    {errors.phone && (
+                        <span className="text-body-sm text-error ml-1">{errors.phone}</span>
+                    )}
+                </div>
+
+                {/* Editable: status */}
+                <div className="flex flex-col gap-2">
+                    <label
+                        htmlFor="supplier-edit-status"
+                        className={`text-label-caps ${
+                            errors.isActive ? "text-error" : "text-on-surface-variant"
+                        }`}
+                    >
+                        Estado <span className="text-error">*</span>
+                    </label>
+                    <div className="relative">
+                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-lg text-outline pointer-events-none">
+                            flag
+                        </span>
+                        <select
+                            id="supplier-edit-status"
+                            value={isActive ? "true" : "false"}
+                            onChange={(e) => {
+                                setIsActive(e.target.value === "true");
+                                clearFieldError("isActive");
+                            }}
+                            className={`${fieldCls(!!errors.isActive)} appearance-none cursor-pointer`}
+                        >
+                            <option value="true">Habilitado</option>
+                            <option value="false">Inhabilitado</option>
+                        </select>
+                    </div>
+                    {errors.isActive && (
+                        <span className="text-body-sm text-error ml-1">{errors.isActive}</span>
+                    )}
                 </div>
             </div>
         </Modal>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ApiError, useApi } from "@/helpers/use-api.helper";
+import { useApi, resolveErrorMessage } from "@/helpers/use-api.helper";
 import { showToast } from "@/helpers/toast.helper";
 import Button from "@/components/ui/Button";
 
@@ -415,7 +415,3 @@ export default function UserList({ users, onRefresh }: UserListProps) {
   );
 }
 
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) return error.message;
-  return fallback;
-}

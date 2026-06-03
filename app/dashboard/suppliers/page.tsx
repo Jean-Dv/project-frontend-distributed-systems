@@ -1,128 +1,149 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useApi, ApiError } from "@/helpers/use-api.helper";
-import { Supplier, SupplierCreatePayload, SupplierEditPayload } from "@/helpers/suppliers.helper";
-import { SupplierStatusChip } from "@/components/suppliers/SupplierStatusChip";
-import { SupplierCreateModal } from "@/components/suppliers/SupplierCreateModal";
-import { SupplierEditModal } from "@/components/suppliers/SupplierEditModal";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { useApi, resolveErrorMessage } from "@/helpers/use-api.helper";
 import { Table } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
+import {
+    Supplier,
+    SupplierCreatePayload,
+    SupplierEditPayload,
+} from "@/helpers/suppliers.helper";
+import { SupplierStatusChip } from "@/components/suppliers/SupplierStatusChip";
+import { SupplierCreateForm } from "@/components/suppliers/SupplierCreateForm";
+import { SupplierEditModal } from "@/components/suppliers/SupplierEditModal";
+import { getRole } from "@/helpers/auth.helper";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+const API_BASE = process.env.API_BASE_URL ?? "http://localhost:8080";
+const SUPPLIERS_ENDPOINT = `${API_BASE}/ms-suppliers/suppliers`;
+
+function normalizeList<T>(data: unknown): T[] {
+    if (Array.isArray(data)) return data as T[];
+    if (data && typeof data === "object" && "content" in data) {
+        return (data as { content: T[] }).content ?? [];
+    }
+    return [];
+}
 
 export default function SuppliersPage() {
     const { apiFetch } = useApi();
+
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [role, setRole] = useState<string | null>(null);
     const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+
+    const createFormRef = useRef<HTMLDivElement>(null);
+
+    const isAdmin = role === "ADMIN";
 
     const loadSuppliers = async () => {
         setIsLoading(true);
-        setError(null);
         try {
-            const res = await apiFetch(`${API_BASE}/ms-suppliers/suppliers`);
-            if (!res.ok) {
-                const msg = await res.text().catch(() => "");
-                throw new Error(msg || `Error ${res.status}`);
-            }
+            const res = await apiFetch(SUPPLIERS_ENDPOINT);
             const data = await res.json();
-            setSuppliers(data);
-        } catch (err) {
-            if (err instanceof ApiError) {
-                setError(err.message);
-            } else {
-                setError("Error al cargar proveedores. Verifique la conexión con el servidor.");
-            }
+            setSuppliers(normalizeList<Supplier>(data));
+        } catch (err: unknown) {
+            toast.error(resolveErrorMessage(err, "No fue posible cargar los proveedores."));
         } finally {
             setIsLoading(false);
         }
     };
 
     useEffect(() => {
+        setRole(getRole());
         void loadSuppliers();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleCreate = async (payload: SupplierCreatePayload) => {
-        const res = await apiFetch(`${API_BASE}/ms-suppliers/suppliers`, {
+        await apiFetch(SUPPLIERS_ENDPOINT, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
         });
-        if (!res.ok) {
-            const msg = await res.text().catch(() => "");
-            throw new Error(msg || `Error ${res.status} al crear el proveedor.`);
-        }
+
+        toast.success("Proveedor registrado correctamente.");
         await loadSuppliers();
     };
 
     const handleEdit = async (id: string, payload: SupplierEditPayload) => {
-        const res = await apiFetch(`${API_BASE}/ms-suppliers/suppliers/${id}`, {
+        await apiFetch(`${SUPPLIERS_ENDPOINT}/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                name: payload.name,
-                email: payload.email,
-                phone: payload.phone,
-                legalRepresentative: payload.legalRepresentative,
-                isActive: payload.isActive,
-            }),
+            body: JSON.stringify(payload),
         });
-        if (!res.ok) {
-            const msg = await res.text().catch(() => "");
-            throw new Error(msg || `Error ${res.status} al actualizar el proveedor.`);
-        }
+
+        setEditingSupplier(null);
+        toast.success("Proveedor actualizado correctamente.");
         await loadSuppliers();
     };
 
-    const columns = [
+    const scrollToCreateForm = () => {
+        createFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    type Column = {
+        header: React.ReactNode;
+        accessorKey: keyof Supplier | string;
+        cell?: (row: Supplier) => React.ReactNode;
+    };
+
+    const columns: Column[] = [
         {
             header: "NIT",
-            accessorKey: "nit" as keyof Supplier,
-            cell: (row: Supplier) => (
-                <span className="text-primary font-semibold">{row.nit}</span>
+            accessorKey: "nit",
+            cell: (row) => (
+                <span className="text-primary font-semibold tabular-nums">{row.nit}</span>
             ),
         },
         {
-            header: "Razón Social",
-            accessorKey: "name" as keyof Supplier,
-            cell: (row: Supplier) => (
+            header: "Nombre / razón social",
+            accessorKey: "name",
+            cell: (row) => (
                 <span className="font-medium text-on-surface">{row.name}</span>
             ),
         },
         {
-            header: "Email",
-            accessorKey: "email" as keyof Supplier,
-            cell: (row: Supplier) => (
-                <span className="text-on-surface-variant">{row.email}</span>
-            ),
-        },
-        {
-            header: "Teléfono",
-            accessorKey: "phone" as keyof Supplier,
-            cell: (row: Supplier) => (
-                <span className="text-on-surface-variant">{row.phone}</span>
-            ),
-        },
-        {
-            header: "Rep. Legal",
-            accessorKey: "legalRepresentative" as keyof Supplier,
-            cell: (row: Supplier) => (
+            header: "Representante legal",
+            accessorKey: "legalRepresentative",
+            cell: (row) => (
                 <span className="text-on-surface-variant">{row.legalRepresentative}</span>
             ),
         },
         {
-            header: "Estado",
-            accessorKey: "isActive" as keyof Supplier,
-            cell: (row: Supplier) => <SupplierStatusChip isActive={row.isActive} />,
+            header: "Correo",
+            accessorKey: "email",
+            cell: (row) => (
+                <a
+                    href={`mailto:${row.email}`}
+                    className="text-primary hover:underline break-all"
+                >
+                    {row.email}
+                </a>
+            ),
         },
         {
+            header: "Teléfono",
+            accessorKey: "phone",
+            cell: (row) => (
+                <span className="text-on-surface-variant whitespace-nowrap">{row.phone}</span>
+            ),
+        },
+        {
+            header: "Estado",
+            accessorKey: "isActive",
+            cell: (row) => <SupplierStatusChip isActive={row.isActive} />,
+        },
+    ];
+
+    if (isAdmin) {
+        // Add the button edit to the end of the columns if the user is an admin
+        columns.push({
             header: "",
-            accessorKey: "id" as keyof Supplier,
-            cell: (row: Supplier) => (
+            accessorKey: "id",
+            cell: (row) => (
                 <button
                     type="button"
                     id={`edit-supplier-${row.id}`}
@@ -133,8 +154,10 @@ export default function SuppliersPage() {
                     <span className="material-symbols-outlined text-[18px]">edit</span>
                 </button>
             ),
-        },
-    ];
+        });
+    }
+
+    const enabledCount = suppliers.filter((s) => s.isActive).length;
 
     return (
         <div className="p-8 max-w-[1440px] mx-auto space-y-6">
@@ -143,31 +166,28 @@ export default function SuppliersPage() {
                 <div>
                     <h1 className="text-h1 text-primary">Gestión de Proveedores</h1>
                     <p className="text-body-md text-on-surface-variant mt-1">
-                        Administre y monitoree el directorio de proveedores registrados.
+                        Registra y mantén actualizado el catálogo de proveedores del sistema.
                     </p>
                 </div>
-                <Button
-                    id="new-supplier-btn"
-                    variant="primary"
-                    onClick={() => setShowCreateModal(true)}
-                    className="self-start md:self-auto"
-                >
-                    <span
-                        className="material-symbols-outlined text-sm mr-1"
-                        style={{ fontVariationSettings: "'FILL' 1" }}
-                    >
-                        add
+                <div className="flex items-center gap-3 self-start md:self-auto">
+                    <span className="text-label-caps text-on-surface-variant">
+                        {enabledCount} de {suppliers.length} habilitados
                     </span>
-                    Nuevo Proveedor
-                </Button>
-            </div>
-
-            {/* Error banner */}
-            {error && (
-                <div className="bg-error-container/40 text-on-error p-4 rounded-xl text-center border border-error/20">
-                    {error}
+                    <Button
+                        id="new-supplier-btn"
+                        variant="primary"
+                        onClick={scrollToCreateForm}
+                    >
+                        <span
+                            className="material-symbols-outlined text-sm mr-1"
+                            style={{ fontVariationSettings: "'FILL' 1" }}
+                        >
+                            add
+                        </span>
+                        Nuevo Proveedor
+                    </Button>
                 </div>
-            )}
+            </div>
 
             {/* Suppliers table */}
             <div className="bg-surface-container-lowest rounded-xl shadow-level-1 border border-outline-variant/30 overflow-hidden">
@@ -186,18 +206,15 @@ export default function SuppliersPage() {
                     data={suppliers}
                     columns={columns}
                     isLoading={isLoading}
-                    emptyStateMessage="No se encontraron proveedores. Crea el primero con el botón 'Nuevo Proveedor'."
+                    emptyStateMessage="No hay proveedores registrados. Registra el primero con el botón 'Nuevo Proveedor'."
                 />
             </div>
 
-            {/* Create modal */}
-            <SupplierCreateModal
-                isOpen={showCreateModal}
-                onClose={() => setShowCreateModal(false)}
-                onSubmit={handleCreate}
-            />
+            {/* Create form */}
+            <div ref={createFormRef}>
+                <SupplierCreateForm onSubmit={handleCreate} />
+            </div>
 
-            {/* Edit modal */}
             <SupplierEditModal
                 supplier={editingSupplier}
                 onClose={() => setEditingSupplier(null)}
