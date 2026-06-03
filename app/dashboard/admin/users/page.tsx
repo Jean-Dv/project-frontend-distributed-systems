@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ApiError, useApi } from "@/helpers/use-api.helper";
+import { useApi, resolveErrorMessage } from "@/helpers/use-api.helper";
 import { showToast } from "@/helpers/toast.helper";
 import UserRegisterForm from "@/components/admin/UserRegisterForm";
 import UserList from "@/components/admin/UserList";
@@ -66,7 +66,3 @@ export default function AdminUsersPage() {
   );
 }
 
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) return error.message;
-  return fallback;
-}

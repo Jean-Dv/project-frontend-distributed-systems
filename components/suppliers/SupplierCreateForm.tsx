@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { resolveErrorMessage } from "@/helpers/use-api.helper";
 import {
     SupplierCreateErrors,
     SupplierCreatePayload,
@@ -19,6 +21,7 @@ export function SupplierCreateForm({ onSubmit }: SupplierCreateFormProps) {
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
     const [errors, setErrors] = useState<SupplierCreateErrors>({});
+    const [formError, setFormError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const clearFieldError = (field: keyof SupplierCreateErrors) =>
@@ -43,6 +46,7 @@ export function SupplierCreateForm({ onSubmit }: SupplierCreateFormProps) {
 
         setIsSubmitting(true);
         setErrors({});
+        setFormError(null);
         try {
             await onSubmit(payload as SupplierCreatePayload);
             setNit("");
@@ -51,8 +55,7 @@ export function SupplierCreateForm({ onSubmit }: SupplierCreateFormProps) {
             setEmail("");
             setPhone("");
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Error al registrar el proveedor.";
-            setErrors({ nit: msg });
+            setFormError(resolveErrorMessage(err, "No fue posible registrar el proveedor."));
         } finally {
             setIsSubmitting(false);
         }
@@ -90,6 +93,9 @@ export function SupplierCreateForm({ onSubmit }: SupplierCreateFormProps) {
             </div>
 
             <form onSubmit={handleSubmit} noValidate className="p-6 space-y-6">
+                {formError && (
+                    <Alert variant="error">{formError}</Alert>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* NIT */}
                     <div className="flex flex-col gap-2">

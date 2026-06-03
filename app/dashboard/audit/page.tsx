@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useApi } from "@/helpers/use-api.helper";
+import { useApi, resolveErrorMessage } from "@/helpers/use-api.helper";
 import { getRole, UserRole } from "@/helpers/auth.helper";
 import nextConfig from "@/next.config";
 import { StatusChip } from "@/components/ui/StatusChip";
@@ -67,17 +67,6 @@ export default function AuditPage() {
                 `${baseUrl}/ms-audit/audit?${query.toString()}`,
                 {}
             );
-            if (!resp.ok) {
-                let msg = `Error ${resp.status}`;
-                try {
-                    msg = (await resp.text()) || msg;
-                } catch {
-                    /* ignore */
-                }
-                setError(msg);
-                setEvents([]);
-                return;
-            }
 
             const json = await resp.json();
             const raw = Array.isArray(json)
@@ -85,11 +74,7 @@ export default function AuditPage() {
                 : json.results || json.data || [];
             setEvents(raw);
         } catch (err: unknown) {
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : "Error al cargar datos de auditoría."
-            );
+            setError(resolveErrorMessage(err, "No fue posible cargar los datos de auditoría."));
             setEvents([]);
         } finally {
             setLoading(false);

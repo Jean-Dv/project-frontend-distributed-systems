@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Alert } from "@/components/ui/Alert";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { resolveErrorMessage } from "@/helpers/use-api.helper";
 import {
     Supplier,
     SupplierEditErrors,
@@ -21,6 +23,7 @@ export function SupplierEditModal({ supplier, onClose, onSave }: SupplierEditMod
     const [phone, setPhone] = useState("");
     const [isActive, setIsActive] = useState(true);
     const [errors, setErrors] = useState<SupplierEditErrors>({});
+    const [formError, setFormError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -29,6 +32,7 @@ export function SupplierEditModal({ supplier, onClose, onSave }: SupplierEditMod
             setPhone(supplier.phone);
             setIsActive(supplier.isActive);
             setErrors({});
+            setFormError(null);
         }
     }, [supplier]);
 
@@ -49,11 +53,11 @@ export function SupplierEditModal({ supplier, onClose, onSave }: SupplierEditMod
         }
 
         setIsSubmitting(true);
+        setFormError(null);
         try {
             await onSave(supplier!.id, payload as SupplierEditPayload);
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Error al actualizar el proveedor.";
-            setErrors({ name: msg });
+            setFormError(resolveErrorMessage(err, "No fue posible actualizar el proveedor."));
         } finally {
             setIsSubmitting(false);
         }
@@ -92,6 +96,9 @@ export function SupplierEditModal({ supplier, onClose, onSave }: SupplierEditMod
             }
         >
             <div className="space-y-5">
+                {formError && (
+                    <Alert variant="error">{formError}</Alert>
+                )}
                 {supplier && (
                     <div className="p-3 bg-surface-container-low rounded-lg border border-outline-variant/30 space-y-1">
                         <p className="text-label-caps text-on-surface-variant">Proveedor</p>

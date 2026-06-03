@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useApi } from "@/helpers/use-api.helper";
+import { useApi, resolveErrorMessage } from "@/helpers/use-api.helper";
 import { getRole } from "@/helpers/auth.helper";
 import { Table } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
@@ -52,14 +52,10 @@ export default function ContractsPage() {
         setIsLoadingContracts(true);
         try {
             const res = await apiFetch(`${API_BASE}/ms-contracts/contracts`);
-            if (res.ok) {
-                const data = await res.json();
-                setContracts(normalizeList<Contract>(data));
-            } else {
-                toast.error("Error al cargar los contratos.");
-            }
-        } catch {
-            toast.error("Error de conexión. Verifique que el servidor esté disponible.");
+            const data = await res.json();
+            setContracts(normalizeList<Contract>(data));
+        } catch (err: unknown) {
+            toast.error(resolveErrorMessage(err, "No fue posible cargar los contratos."));
         } finally {
             setIsLoadingContracts(false);
         }
@@ -69,10 +65,8 @@ export default function ContractsPage() {
         setIsLoadingSuppliers(true);
         try {
             const res = await apiFetch(`${API_BASE}/ms-suppliers/suppliers`);
-            if (res.ok) {
-                const data = await res.json();
-                setSuppliers(normalizeList<Supplier>(data));
-            }
+            const data = await res.json();
+            setSuppliers(normalizeList<Supplier>(data));
         } catch {
             // Supplier panel is secondary — fail silently
         } finally {
@@ -90,42 +84,24 @@ export default function ContractsPage() {
     // ── Actions ───────────────────────────────────────────────────────────────
 
     const handleCreate = async (payload: ContractCreatePayload) => {
-        // 1. Crear contrato
         const createRes = await apiFetch(`${API_BASE}/ms-contracts/contracts`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
         });
 
-        if (!createRes.ok) {
-            const msg = await createRes.text().catch(() => "");
-            throw new Error(msg || `Error ${createRes.status} al crear el contrato.`);
-        }
-
-        // 2. Obtener respuesta de creación
         const createdContract = await createRes.json();
         const contractId = createdContract.id;
 
-        console.log({contractId})
-
         if (!contractId) {
-            throw new Error("No se recibió el ID del contrato creado.");
+            throw new Error("No fue posible registrar el contrato. Intenta nuevamente.");
         }
 
-        // 3. Obtener PDF
         const pdfRes = await apiFetch(
             `${API_BASE}/ms-contracts/contracts/${contractId}/pdf`,
-            {
-                method: "GET"
-            }
+            { method: "GET" },
         );
 
-        if (!pdfRes.ok) {
-            const msg = await pdfRes.text().catch(() => "");
-            throw new Error(msg || `Error ${pdfRes.status} al descargar el PDF.`);
-        }
-
-        // 4. Descargar PDF
         const blob = await pdfRes.blob();
         const url = URL.createObjectURL(blob);
 
@@ -141,21 +117,15 @@ export default function ContractsPage() {
 
         toast.success("¡Contrato creado! El PDF se ha descargado automáticamente.");
 
-        // 5. Recargar contratos
         await loadContracts();
     };
 
     const handleEdit = async (id: string, payload: ContractEditPayload) => {
-        const res = await apiFetch(`${API_BASE}/ms-contracts/contracts/${id}`, {
+        await apiFetch(`${API_BASE}/ms-contracts/contracts/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
         });
-
-        if (!res.ok) {
-            const msg = await res.text().catch(() => "");
-            throw new Error(msg || `Error ${res.status} al actualizar el contrato.`);
-        }
 
         setEditingContract(null);
         toast.success("Contrato actualizado correctamente.");
