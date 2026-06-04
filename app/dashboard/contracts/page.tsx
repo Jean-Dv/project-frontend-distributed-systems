@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useApi, resolveErrorMessage } from "@/helpers/use-api.helper";
 import { getRole } from "@/helpers/auth.helper";
@@ -45,6 +45,12 @@ export default function ContractsPage() {
     const createFormRef = useRef<HTMLDivElement>(null);
 
     const isOfficer = role === "FUNC";
+
+    const supplierMap = useMemo(() => {
+        const map = new Map<string, string>();
+        suppliers.forEach((s) => map.set(s.id, s.name));
+        return map;
+    }, [suppliers]);
 
     // ── Data loading ──────────────────────────────────────────────────────────
 
@@ -136,6 +142,30 @@ export default function ContractsPage() {
         createFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     };
 
+    const handleDownloadPdf = async (contractId: string) => {
+        try {
+            const res = await apiFetch(
+                `${API_BASE}/ms-contracts/contracts/${contractId}/pdf`,
+                { method: "GET" }
+            );
+            if (!res.ok) {
+                toast.error("PDF no disponible para este contrato.");
+                return;
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `contrato-${contractId}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        } catch {
+            toast.error("Error de conexión al descargar el PDF.");
+        }
+    };
+
     // ── Table columns ─────────────────────────────────────────────────────────
 
     type Column = {
@@ -156,9 +186,9 @@ export default function ContractsPage() {
         },
         {
             header: "Proveedor",
-            accessorKey: "supplierName",
+            accessorKey: "supplierId",
             cell: (row) => (
-                <span className="font-medium text-on-surface">{row.supplierName ?? "—"}</span>
+                <span className="font-medium text-on-surface">{supplierMap.get(row.supplierId) ?? "—"}</span>
             ),
         },
         {
@@ -201,6 +231,21 @@ export default function ContractsPage() {
                 <span className="text-on-surface-variant">{row.version ?? "v1"}</span>
             ),
         },
+        {
+            header: "",
+            accessorKey: "id",
+            cell: (row: Contract) => (
+                <button
+                    type="button"
+                    id={`pdf-contract-${row.id}`}
+                    onClick={() => void handleDownloadPdf(row.id)}
+                    title="Descargar PDF"
+                    className="p-1.5 rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary/10 transition-colors"
+                >
+                    <span className="material-symbols-outlined text-[18px]">download</span>
+                </button>
+            ),
+        } satisfies Column,
         // Edit action — FUNC only
         ...(isOfficer
             ? [

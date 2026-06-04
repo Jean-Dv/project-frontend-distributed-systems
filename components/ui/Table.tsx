@@ -61,7 +61,7 @@ export function Table<T>({
               >
                 {columns.map((col, colIndex) => (
                   <td key={colIndex} className="px-md py-sm text-table-data text-on-surface">
-                    {col.cell ? col.cell(row) : (row as any)[col.accessorKey]}
+                    {col.cell ? col.cell(row) : (row as Record<string, React.ReactNode>)[col.accessorKey]}
                   </td>
                 ))}
               </tr>

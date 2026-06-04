@@ -1,9 +1,9 @@
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import DashboardShell from "@/components/layouts/DashboardShell";
 
-export default function AuditLayout({ children }: { children: React.ReactNode }) {
+export default function HomeLayout({ children }: { children: React.ReactNode }) {
     return (
-        <ProtectedRoute allowedRoles={["AUDITOR", "ADMIN"]}>
+        <ProtectedRoute>
             <DashboardShell>{children}</DashboardShell>
         </ProtectedRoute>
     );

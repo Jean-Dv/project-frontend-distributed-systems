@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import InputField from "@/components/ui/InputField";
 import { useRouter } from "next/navigation";
-import { getRole, popAuthMessage, roleToDashboardPath, setAuthSession } from "@/helpers/auth.helper";
+import { clearAuthSession, getRole, popAuthMessage, roleToDashboardPath, setAuthSession } from "@/helpers/auth.helper";
 import { getApiBaseUrl } from "@/helpers/use-api.helper";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
@@ -56,7 +56,14 @@ export default function LoginForm() {
                 const scopes = Array.isArray(data?.scopes) ? data.scopes : undefined;
                 const role = typeof data?.role === "string" ? data.role : null;
                 setAuthSession({ token, scopes, role });
-                router.push(roleToDashboardPath(getRole()));
+                const userRole = getRole();
+                if (!userRole) {
+                    clearAuthSession();
+                    toast.error("Tu cuenta no tiene un rol asignado. Espera a que un administrador te asigne permisos para acceder.");
+                    setIsLoading(false);
+                    return;
+                }
+                router.push(roleToDashboardPath(userRole));
             } else if (response.status >= 500) {
                 setErrorMessage(
                     "El servicio no está disponible en este momento. Intenta nuevamente más tarde.",
